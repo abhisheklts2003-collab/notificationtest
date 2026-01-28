@@ -44,7 +44,7 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
-   🔔 SEND NOTIFICATION API
+   🔔 SEND TO ALL USERS (TOPIC)
 ========================= */
 app.post("/send-notification", async (req, res) => {
   console.log("📩 /send-notification HIT");
@@ -60,26 +60,56 @@ app.post("/send-notification", async (req, res) => {
   }
 
   try {
-    console.log("🔥 Sending notification to ALL USERS (topic)");
-
     const response = await admin.messaging().send({
-      topic: "all_users",   // ✅ MAGIC LINE
+      topic: "all_users",
+      notification: { title, body },
+    });
+
+    return res.json({ success: true, response });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/* =========================
+   🔔 SEND TO SINGLE USER (TOKEN)
+========================= */
+app.post("/send-to-token", async (req, res) => {
+  console.log("📩 /send-to-token HIT");
+  console.log("📦 Request body:", req.body);
+
+  const { token, title, body } = req.body;
+
+  if (!token || !title || !body) {
+    return res.status(400).json({
+      success: false,
+      message: "token, title & body required",
+    });
+  }
+
+  try {
+    const response = await admin.messaging().send({
+      token: token, // 🔥 SINGLE USER TOKEN
       notification: {
         title,
         body,
       },
+      android: {
+        priority: "high",
+      },
     });
 
-    console.log("✅ Notification sent to all users");
-    console.log("📨 FCM Response:", response);
+    console.log("✅ Notification sent to single user");
 
     return res.json({
       success: true,
       response,
     });
   } catch (error) {
-    console.error("❌ FCM ERROR");
-    console.error(error);
+    console.error("❌ FCM ERROR", error);
 
     return res.status(500).json({
       success: false,
