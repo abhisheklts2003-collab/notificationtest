@@ -6,25 +6,54 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 Firebase Admin SDK init (Render ENV se)
-const serviceAccount = JSON.parse(
-  process.env.FIREBASE_SERVICE_ACCOUNT
-);
+/* =========================
+   🔐 FIREBASE INIT (SAFE)
+========================= */
+let serviceAccount;
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+try {
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    console.error("❌ FIREBASE_SERVICE_ACCOUNT ENV missing");
+    process.exit(1);
+  }
 
-// 🔔 Test route
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  console.log("✅ Firebase service account loaded");
+} catch (err) {
+  console.error("❌ Failed to parse FIREBASE_SERVICE_ACCOUNT");
+  console.error(err);
+  process.exit(1);
+}
+
+try {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+  console.log("🔥 Firebase Admin initialized");
+} catch (err) {
+  console.error("❌ Firebase initializeApp failed");
+  console.error(err);
+  process.exit(1);
+}
+
+/* =========================
+   🔔 TEST ROUTE
+========================= */
 app.get("/", (req, res) => {
   res.send("🚀 Notification Server Running");
 });
 
-// 🔔 Send notification API
+/* =========================
+   🔔 SEND NOTIFICATION API
+========================= */
 app.post("/send-notification", async (req, res) => {
+  console.log("📩 /send-notification HIT");
+  console.log("📦 Request body:", req.body);
+
   const { token, title, body } = req.body;
 
   if (!token || !title || !body) {
+    console.error("❌ Missing fields");
     return res.status(400).json({
       success: false,
       message: "token, title, body required",
@@ -32,29 +61,39 @@ app.post("/send-notification", async (req, res) => {
   }
 
   try {
-    const message = {
+    console.log("🔥 Sending notification to FCM...");
+    console.log("➡️ Token:", token);
+
+    const response = await admin.messaging().send({
       token,
       notification: {
         title,
         body,
       },
-    };
+    });
 
-    const response = await admin.messaging().send(message);
+    console.log("✅ Notification sent");
+    console.log("📨 FCM Response:", response);
 
-    res.json({
+    return res.json({
       success: true,
       response,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("❌ FCM ERROR");
+    console.error(error);
+
+    return res.status(500).json({
       success: false,
       error: error.message,
+      code: error.code || "UNKNOWN",
     });
   }
 });
 
-// 🔥 Render port
+/* =========================
+   🔥 SERVER START
+========================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🔥 Server running on port ${PORT}`);
