@@ -50,29 +50,27 @@ app.post("/send-notification", async (req, res) => {
   console.log("📩 /send-notification HIT");
   console.log("📦 Request body:", req.body);
 
-  const { token, title, body } = req.body;
+  const { title, body } = req.body;
 
-  if (!token || !title || !body) {
-    console.error("❌ Missing fields");
+  if (!title || !body) {
     return res.status(400).json({
       success: false,
-      message: "token, title, body required",
+      message: "title & body required",
     });
   }
 
   try {
-    console.log("🔥 Sending notification to FCM...");
-    console.log("➡️ Token:", token);
+    console.log("🔥 Sending notification to ALL USERS (topic)");
 
     const response = await admin.messaging().send({
-      token,
+      topic: "all_users",   // ✅ MAGIC LINE
       notification: {
         title,
         body,
       },
     });
 
-    console.log("✅ Notification sent");
+    console.log("✅ Notification sent to all users");
     console.log("📨 FCM Response:", response);
 
     return res.json({
