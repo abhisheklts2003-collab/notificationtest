@@ -3,11 +3,12 @@ import cors from "cors";
 import admin from "firebase-admin";
 import callNotificationRoutes from "./callnotification.js";
 
-app.use("/", callNotificationRoutes);
-
 const app = express();
+
 app.use(cors());
 app.use(express.json());
+
+app.use("/", callNotificationRoutes);
 
 /* =========================
    🔐 FIREBASE INIT (SAFE)
