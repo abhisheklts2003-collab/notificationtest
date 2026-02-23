@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
 import admin from "firebase-admin";
+import callNotificationRoutes from "./callnotification.js";
+
+app.use("/", callNotificationRoutes);
 
 const app = express();
 app.use(cors());
